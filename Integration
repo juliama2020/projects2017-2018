@@ -1,0 +1,133 @@
+# Name: Julia Ma
+
+###########################################################
+.data
+N: .word 100
+a: .float 0
+b: .float 1
+newline: .asciiz "\n"
+error: .asciiz "error: must have low < hi\n"
+
+.text 
+###########################################################
+main:
+	# set argument registers appropriately
+	l.s $f12, a	      # load low into $f12
+	l.s $f13, b	      # load high into $f13
+	lw $s0, N
+
+	
+	la $a0, ident	    # load address of function into $a0
+	
+	# call integrate on test function 
+	
+	jal integrate	
+	
+	# print result and exit with status 0
+	
+	li $v0, 2
+	mov.s $f12, $f0
+	syscall
+	
+	addi $a0, $zero, 0
+	li $v0, 17
+	syscall
+
+
+endFail:	
+	li $v0, 4		        # prints error message
+	la $a0, error
+	syscall
+	
+	addi $a0, $zero, 1	# exits with status 1
+	li $v0, 17
+	syscall
+		
+
+###########################################################
+# float integrate(float (*func)(float x), float low, float hi)
+# integrates func over [low, hi]
+# $f12 gets low, $f13 gets hi, $a0 gets address (label) of func
+# $f0 gets return value
+integrate: 	
+	addi $sp, $sp, -4		# save return address on stacks
+	sw $ra, 0($sp)	
+
+	jal check			      # check input for a and b is valid
+	
+	mov.s $f20, $f12		# initialize $f20 to value of a, will be left side of interval
+	
+	
+	li $t0, 2		      	# make $f21 = 2 (a float)
+	mtc1 $t0, $f21
+	cvt.s.w $f21, $f21	
+	
+	# initialize $f4 to hold N
+	
+	mtc1 $s0, $f4
+	
+	# since N is declared as a word, will need to convert 	
+
+	cvt.s.w $f4, $f4	      	# $f4 = N
+		
+	move $t7, $0		        	# $t7 will be a counter
+	sub.s $f22, $f13, $f12		# let $f22 = b - a	
+	div.s $f22, $f22, $f4		  # let $f22 = (b-a)/N, so $f22 = delta x
+	
+
+
+	
+loop:	addi $t7, $t7, 1		
+	mtc1 $t7, $f5
+	cvt.s.w $f5, $f5	      	# $f5 = i	
+		
+	mul.s $f5, $f5, $f22		  # $f5 = i*delta x
+	add.s $f7, $f20, $f5	  	# $f7 = a + i*delta x (right boundary of interval)
+	sub.s $f6, $f7, $f22	  	# $f6 = right boundary - delta x (left boundary of interval)
+	add.s $f8, $f6, $f7		    # $f8 = left boundary + right boundary
+	div.s $f8, $f8, $f21		  # $f8 = midpoint of interval (x_i*)
+	
+	
+	mov.s $f12, $f8			      # put x_i* into $f12
+	jalr $a0			            # calls f(x_i*) => $f0 = f(x_i*)
+	
+	
+	mul.s $f0, $f0, $f22	  	# $f0 = f(x_i*)*(delta x)
+	add.s $f28, $f28, $f0		  # $f28 = sum of f(x_i*)*(delta x)
+
+	blt $t7, $s0, loop		    # if counter<N, repeat loop
+	
+	lw $ra, 0($sp)			      # get return address
+	addi $sp, $sp, 4
+	mov.s $f0, $f28
+	
+	jr $ra
+	
+	
+
+###########################################################
+# void check(float low, float hi)
+# checks that low < hi
+# $f12 gets low, $f13 gets hi
+# # prints error message and exits with status 1 on fail
+check:	
+	cvt.w.s $f12, $f12		  # convert the single precision floating point to integer
+	cvt.w.s $f13, $f13
+	
+	mfc1 $t1, $f12		    	# move values to temporary registers
+	mfc1 $t2, $f13
+	
+	bge $t1, $t2, endFail		# if a>=b, then go to endFail (exit out of program)
+	
+	cvt.s.w $f12, $f12		   # convert integer back to single precision floating point
+	cvt.s.w $f13, $f13
+	
+	jr $ra
+
+###########################################################
+# float ident(float x) { return x; }
+# function to test your integrator
+# $f12 gets x, $f0 gets return value
+ident:	
+	mov.s $f0, $f12
+	jr $ra
