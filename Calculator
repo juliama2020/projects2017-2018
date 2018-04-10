@@ -1,22 +1,17 @@
 #Calculator
-#You will recieve marks based 
-#on functionality of your calculator.
-#REMEMBER: invalid inputs are ignored.
 
-
-#Have fun!
-
+#NOTE: invalid inputs are ignored.
 
 #TODO
 #main procedure, that will call your calculator
 
 #calculator procedure, that will deal with the input
-	#2 cases you must consider:
+	#2 cases:
 
-	#  Number Operation Number <enter is pressed>
-	#  Must display the result on the screen
+	#  1) Number Operation Number <enter is pressed>
+	#  display the result on the screen
 
-	#  Operation Number <enter is pressed>
+	#  2) Operation Number <enter is pressed>
 	#  uses prior result as the first number
 	#  Returns the new result to the display
 
@@ -38,7 +33,7 @@ exitMsg: .asciiz "\nYou have exited from MIPS Calculator.\n"
 
 .text 
 
-main:	la $a0, introMsg1		# print introduction messages
+main:	la $a0, introMsg1	# print introduction messages
 	jal printstr
 	la $a0, introMsg2
 	jal printstr
@@ -47,7 +42,7 @@ main:	la $a0, introMsg1		# print introduction messages
 	move $s6, $zero		# tells if there has been a previous calculation before
 				# $s6 = 0 if there has not been, 1 if there has
 	
-newCalc:				# s0 = last result
+newCalc:			# s0 = last result
 	move $s1, $zero		# s1 = first number
 	move $s2, $zero		# s2 = operation
 	move $s3, $zero		# s3 = second number
@@ -74,7 +69,7 @@ start:	jal getInput		# reading and writing using MMIO
 	beq $s7, 9, newCalc
 	bne $s7, 2, start
 	
-	bne $s2, 47, evaluate		# check if dividing by 0
+	bne $s2, 47, evaluate	# check if dividing by 0
 	bne $s3, 0, evaluate
 	
 	la $a0, invalid	 	# if so, say it's an invalid expression and start new calculation
@@ -103,7 +98,7 @@ multOp:	mul $s0, $s1, $s3		# multiply numbers, save in $s0 and copy to $t8
 	move $t8, $s0
 	j checkNeg
 
-makePositive1:			# make the digits positive, keep track of negatives
+makePositive1:				# make the digits positive, keep track of negatives
 	bgtz $s1, makePositive2
 	addi $t9, $zero, 1
 	sub $s1, $zero, $s1
@@ -116,20 +111,20 @@ makePositive2:
 divOp: 
 	div $s1, $s3
 	mflo $s0			# quotient in $s0
-	move $t8, $s0		# save a copy of integer into $t8 (always positive for printing)
-	beqz $t9, noNeg		# check whether to negate $s0
+	move $t8, $s0			# save a copy of integer into $t8 (always positive for printing)
+	beqz $t9, noNeg			# check whether to negate $s0
 	sub $s0, $zero, $s0	
 noNeg:	mfhi $t3			# remainder in $t3
 	beqz $t3, checkZero		# if no remainder, done
 	#beqz $s0, noRound
 	#addi $s0, $s0, 1		# else round up quotient
-noRound:	mul $t3, $t3, 10		# remainder*10
-	div $t3, $s3		# remainder*10/divisor
+noRound:	mul $t3, $t3, 10	# remainder*10
+	div $t3, $s3			# remainder*10/divisor
 	mflo $t3			# first digit after decimal point in $t3	
 	mfhi $t4			# remainder in $t4
 	beqz $t4, checkZero		# if no remainder, go print
 	mul $t4, $t4, 10
-	div $t4, $s3		# remainder*10/divisor
+	div $t4, $s3			# remainder*10/divisor
 	mflo $t4			# second digit after decimal point in $t4
 	mfhi $t5			# remainder in $t5
 	mul $t5, $t5, 10
@@ -141,15 +136,15 @@ noRound:	mul $t3, $t3, 10		# remainder*10
 	j checkZero
 
 round2:	beq $t3, 9, round3		# rounding from .095 requires incrementing first
-	move $t4, $zero		# digit after decimal
+	move $t4, $zero			# digit after decimal
 	addi $t3, $t3, 1
 	j checkZero
 
-round3: 	addi $t8, $t8, 1		# rounding up from .99 requires incrementing first digit
+round3:	addi $t8, $t8, 1		# rounding up from .99 requires incrementing first digit
 	move $t3, $zero
 	move $t4, $zero
 
-checkZero:	bnez $s0, roundUp		# if answer is 0.00, get rid of negative
+checkZero:	bnez $s0, roundUp	# if answer is 0.00, get rid of negative
 	bnez $t3, roundUp
 	bnez $t4, roundUp
 	move $t9, $zero
@@ -159,14 +154,14 @@ checkNeg:	bgez $s0, printResult
 	addi $t9, $zero, 1		# t9 = 1 => negative output
 	sub $t8, $zero, $t8		# make answer positive
 	
-roundUp:	bnez $t9, printResult		# check for rounding up when dividing
+roundUp:bnez $t9, printResult		# check for rounding up when dividing
 	addi $s0, $s0, 1
 printResult:
 	la $a0, result
-	jal printstr		# print "Result: "
+	jal printstr			# print "Result: "
 		
 	addi $t2, $zero, 10		# let $t2 = 10
-	move $s4, $zero		# let $s4 be a digit counter
+	move $s4, $zero			# let $s4 be a digit counter
 	la $s5, buffer
 	
 	beqz $t9, resultLoop		# if not negative, don't print -
@@ -177,15 +172,15 @@ printResult:
 resultLoop:	div $t8, $t2		# divide quotient by 10
 	mfhi $t5			# put remainder into $t5 (smallest digit)
 	mflo $t8			# put quotient into $t8
-	sb $t5, ($s5)		# store into buffer
+	sb $t5, ($s5)			# store into buffer
 	addi $s4, $s4, 1		# increment digit counter
 	addi $s5, $s5, 1		# increment buffer pointer
 	bnez $t8, resultLoop
 	
 	addi $s5, $s5, -1		# pointer is now pointing to most significant digit of answer
-intLoop:	lb $v0, ($s5)		# get digit from buffer
+intLoop:lb $v0, ($s5)			# get digit from buffer
 	addi $v0, $v0, 48		# convert int back to ASCII
-	jal printInput		# print digit
+	jal printInput			# print digit
 	addi $s5, $s5, -1
 	addi $s4, $s4, -1
 	bnez $s4, intLoop
@@ -194,16 +189,16 @@ intLoop:	lb $v0, ($s5)		# get digit from buffer
 	jal printInput
 	
 	addi $v0, $t3, 48		# change first digit after decimal point to ASCII
-	jal printInput		# print first digit
+	jal printInput			# print first digit
 	
 	addi $v0, $t4, 48		# change second digit after decimal point to ASCII
-	jal printInput		# print second digit
+	jal printInput			# print second digit
 	
-	la $a0, newline		# print newline
+	la $a0, newline			# print newline
 	jal printstr
 	
 	addi $s6, $zero, 1		# succesfully evaluated an expression
-	move $t9, $zero		# reinitialize to not negative
+	move $t9, $zero			# reinitialize to not negative
 	move $a0, $zero
 	j newCalc
 	
@@ -213,7 +208,7 @@ intLoop:	lb $v0, ($s5)		# get digit from buffer
 
 # method to print a str, address in $a0
 
-printstr:	lui $t0, 0xffff		#ffff0000
+printstr:lui $t0, 0xffff		#ffff0000
 	lbu $a1, ($a0)
 printloop: 	sw $a1, 12($t0)		 #data
 	addi $a0, $a0, 1
@@ -222,12 +217,12 @@ printloop: 	sw $a1, 12($t0)		 #data
 	jr $ra
 	
 	
-getInput:  	lui $t0, 0xffff 		#ffff0000
-Loop1:	lw $t1, 0($t0)		#control
+getInput: lui $t0, 0xffff 		#ffff0000
+Loop1:	lw $t1, 0($t0)			#control
 	andi $t1,$t1,0x0001
 	beq $t1,$zero,Loop1
 	
-	lw $v0, 4($t0) 		#data
+	lw $v0, 4($t0) 			#data
 	
 	beq $v0, 113, quit		# if ASCII = 113, then character is q => quit program
 	beq $v0, 99, clear		# if ASCII = 99, then character is c => clear calculator
@@ -245,21 +240,21 @@ Loop1:	lw $t1, 0($t0)		#control
 	j Loop1
 
 printInput:	move $a0, $v0
-	lui $t0, 0xffff		#ffff0000
-Loop2: 	lw $t1, 8($t0) 		#control
+	lui $t0, 0xffff			#ffff0000
+Loop2: 	lw $t1, 8($t0) 			#control
 	andi $t1,$t1,0x0001
 	beq $t1,$zero,Loop2
-	sw $a0, 12($t0)		 #data	
+	sw $a0, 12($t0)			#data	
 	jr $ra
 
-nmbrInput:	beq $s7, 10, case1		# if $s7 = 10, then the first valid input is a negative digit
+nmbrInput:	beq $s7, 10, case1	# if $s7 = 10, then the first valid input is a negative digit
 	beq $s7, 0, case1		# if $s7 = 0, then the first valid input is a positive digit
 	beq $s7, 11, secondInt
 	beq $s7, 4, secondInt		# if $s7 = 4, then waiting for second integer
 	blt $s7, 5, Loop1		# if $s7 is not 5 or 6, then invalid input
 	bgt $s7, 6, Loop1
 	addi $s4, $s4, 1		# increment digit counter
-	sb $v0, ($s5)		# put next digit into buffer
+	sb $v0, ($s5)			# put next digit into buffer
 	addi $s5, $s5, 1		# increment pointer
 	j printInput
 
@@ -281,11 +276,11 @@ secondInt:	sb $v0, ($s5)
 	j printInput
 	
 
-operand:	beq $s7, 0, case2		# if $s7 = 10, then first valid input is an operand
+operand:beq $s7, 0, case2		# if $s7 = 10, then first valid input is an operand
 	bne $s7, 3, Loop1		# if $s7!=3 (not waiting for an operation), go back to waiting for valid input
-	move $s2, $v0		# else put operation into $s2
+	move $s2, $v0			# else put operation into $s2
 	addi $s7, $zero, 1		# change to waiting for a ' '
-	j printInput		# and pint the input
+	j printInput			# and print the input
 	
 space:	beq $s7, 6, getFirst		# if got a ' ' after first int, then finished first int
 	beq $s7, 10, case2Neg
@@ -293,8 +288,8 @@ space:	beq $s7, 6, getFirst		# if got a ' ' after first int, then finished first
 	addi $s7, $zero, 4		# change to waiting for a second integer or negative input
 	j printInput
 
-getFirst:	addi $s7, $zero, 3		# change to waiting for an operation
-	lb $t0, -1($s5)		# get last digit from the buffer
+getFirst:addi $s7, $zero, 3		# change to waiting for an operation
+	lb $t0, -1($s5)			# get last digit from the buffer
 	addi $t0, $t0, -48		# change from ascii to integer
 	add $s1, $zero, $t0		# get ones digit into first number
 	addi $t1, $zero, 10		# begin the multipying thing
@@ -312,9 +307,9 @@ loopNumb1:  lb $t0, ($s5)		# get next digit from buffer
 	beqz $s4, checkNeg1
 	j loopNumb1
 
-getSecond:	bne $s7, 5, Loop1
+getSecond: bne $s7, 5, Loop1
 	addi $s7, $zero, 2		# change to go for evaluation
-	lb $t0, -1($s5)		# get last digit from the buffer
+	lb $t0, -1($s5)			# get last digit from the buffer
 	addi $t0, $t0, -48		# change from ascii to integer
 	add $s3, $zero, $t0		# put ones digit into first number
 	addi $t1, $zero, 10		# begin the multipying thing
@@ -332,12 +327,12 @@ loopNumb2: 	lb $t0, ($s5)		# get next digit from buffer
 	beqz $s4, checkNeg2
 	j loopNumb2
 	
-checkNeg1: 	beq $t9, $zero, clearBuff	# if not negative, clear buffer
+checkNeg1: beq $t9, $zero, clearBuff	# if not negative, clear buffer
 	sub $s1, $zero, $s1		# else, first neggate the int value
 	move $t9, $zero
 	j clearBuff
 	
-checkNeg2: 	beq $t9, $zero, clearBuff	# if not negative, clear buffer
+checkNeg2: beq $t9, $zero, clearBuff	# if not negative, clear buffer
 	sub $s3, $zero, $s3		# else, first negate the int value
 	move $t9, $zero
 	j clearBuff
@@ -346,44 +341,44 @@ clearBuff:  move $t7, $zero		# loop to clear buffer - set to null
 	la $t6, buffer
 	la $s5, buffer
 	move $s4, $zero
-loopclear:	la $zero, ($t6)
+loopclear: la $zero, ($t6)
 	addi $t7, $t7, 1
 	addi $t6, $t6, 1
 	blt $t7, 100, loopclear
 	j printInput
 	
 case:	addi $s7, $zero, 10		# change to waiting for digit or ' ' => see if first number is negative
-	move $s2, $v0		# put operation into $s2 just in case
+	move $s2, $v0			# put operation into $s2 just in case
 	j printInput
 
-case1:	sb $v0, ($s5)		# put first digit into buffer
+case1:	sb $v0, ($s5)			# put first digit into buffer
 	addi $s4, $zero, 1		# begin counter (of digits) at 1
 	addi $s5, $s5, 1		# increment pointer
 	addi $s7, $zero, 6		# change to waiting for ' ' or a digit
 	bne $s2, 45, printInput		# first integer is not negative
-	move $s2, $zero		# take out operation
+	move $s2, $zero			# take out operation
 	addi $t9, $zero, 1		# $t9 = 1 => integer is negative
 	j printInput
 
 case2Neg:	beqz $s6, Loop1		# if there has not been a previous operation, then invalid input
-	move $s1, $s0		# else, the first number is the result from the previous operation
+	move $s1, $s0			# else, the first number is the result from the previous operation
 	addi $v0, $zero, 32		# put operation into $s2 to print
 	addi $s7, $zero, 4		# change to waiting for a number or "-"
 	j printInput
 	
-case2: 	beqz $s6, Loop1		# if not a "-", then wait for a ' ' instead of a digit
+case2: 	beqz $s6, Loop1			# if not a "-", then wait for a ' ' instead of a digit
 	move $s1, $s0
 	move $s2, $v0
 	addi $s7, $zero, 1
 	j printInput
 
-clear:				# print a newline and start a new calculation
+clear:					# print a newline and start a new calculation
 	addi $s7, $zero, 9
 	addi $v0, $zero, 10
 	j printInput
 	
 
-quit:	la $a0, exitMsg		# print exit message and exit
+quit:	la $a0, exitMsg			# print exit message and exit
 	jal printstr
 
 	li $v0, 10
