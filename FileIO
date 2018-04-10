@@ -5,7 +5,7 @@
 #Must use accurate file path.
 str1:	.asciiz 
 str2:	.asciiz 
-str3:	.asciiz 	#used as output
+str3:	.asciiz 		#used as output
 
 buffer:  .space 2048		# buffer for upto 2048 bytes
 writemessage: "P2\n24 7\n15\n"	# what to write into test.pgm
@@ -19,14 +19,14 @@ closeErrMsg: .asciiz "Error in closing file.\n"
 	.globl main
 
 main:
-	la $a0,str1	     	#readfile takes $a0 as input
+	la $a0,str1	     		#readfile takes $a0 as input
 	jal readfile
-	
-	la $a0, str3	  	#writefile will take $a0 as file location
-	la $a1, buffer		#$a1 takes location of what we wish to write.
+		
+	la $a0, str3	  		#writefile will take $a0 as file location
+	la $a1, buffer			#$a1 takes location of what we wish to write.
 	jal writefile
 
-	li $v0,10		      # exit
+	li $v0,10		     	# exit
 	syscall
 
 readfile:
@@ -35,22 +35,21 @@ readfile:
 #Conduct error check, to see if file exists
 	
 	li $v0, 13	        	# syscall for open a file
-	li $a1, 0			        # open for reading
-	li $a2, 0			        # file mode ignored
+	li $a1, 0			# open for reading
+	li $a2, 0			# file mode ignored
 	syscall
 	bltz $v0, openerror		# if no file, then print error message and exit 
-	move $s6, $v0	       	# else, save file descriptor
+	move $s6, $v0	     	  	# else, save file descriptor
 
 # read from file
-# use correct file descriptor, and point to buffer
 # hardcode maximum number of chars to read
 # read from file
   
-	li $v0, 14		  	    # syscall for read from file
-	move $a0, $s6		      # put file descriptor into $a0 for reading
-	la $a1, buffer		    # address of buffer to put read characters
-	li $a2, 2048		      # hardcoded buffer length
-	syscall			          # read from file
+	li $v0, 14		  	# syscall for read from file
+	move $a0, $s6		      	# put file descriptor into $a0 for reading
+	la $a1, buffer		    	# address of buffer to put read characters
+	li $a2, 2048		      	# hardcoded buffer length
+	syscall			        # read from file
 	bltz $v0, readerror		# if error in reading, print error message and exit
 
 # address of the ascii string you just read is returned in $v1.
@@ -61,19 +60,19 @@ readfile:
 # close the file
 	
 	li $v0, 16		      	# syscall for close a file
-	move $a0, $s6		      # put file descriptor into $a0 to close
+	move $a0, $s6		      	# put file descriptor into $a0 to close
 	syscall
-	bltz $a0, closeerror	# if error in closing file, print error mesage and exit
+	bltz $a0, closeerror		# if error in closing file, print error mesage and exit
 	
-	move $t0, $a1	      	# copy address of buffer into $t0
-	lbu $a0, ($t0)		    # load byte at address
+	move $t0, $a1	      		# copy address of buffer into $t0
+	lbu $a0, ($t0)		    	# load byte at address
 	beqz $a0, endPrint		# if null, end print loop and exit
 	
-printLoop:	li $v0, 11	# else, print to screen
+printLoop: li $v0, 11			# else, print to screen
 	syscall
 	
-	addi $t0, $t0, 1		  # increment pointer to address of buffer
-	lbu $a0, ($t0)		    # load byte at address
+	addi $t0, $t0, 1		# increment pointer to address of buffer
+	lbu $a0, ($t0)		    	# load byte at address
 	bnez $a0, printLoop		# if not null, continue printing
 
 endPrint:	jr $ra
@@ -81,40 +80,37 @@ endPrint:	jr $ra
 
 writefile:
 	
-	move $s0, $a1		      # save address of buffer in $s0
+	move $s0, $a1		    	# save address of buffer in $s0
 	
 #open file to be written to, using $a0.
 	
-	li $v0, 13			      # syscall for open file
-	li $a1, 9			        # open for writing
-	li $a2, 0			        # file mode ignored
+	li $v0, 13			# syscall for open file
+	li $a1, 9			# open for writing
+	li $a2, 0			# file mode ignored
 	syscall
 	bltz $v0, openerror		# error in opening file
 	
-	move $s7, $v0		      # save file descriptor
+	move $s7, $v0			# save file descriptor
 	
-#write the specified characters as seen on assignment PDF:
-#P2 
-#24 7
-#15
+#write the specified characters:
 	
 	li $v0, 15		      	# syscall for write to file
-	move $a0, $s7	      	# put file descriptor into $a0
-	la $a1, writemessage	# address of message from which to write
+	move $a0, $s7	      		# put file descriptor into $a0
+	la $a1, writemessage		# address of message from which to write
 	li $a2, 12		       	# hardcoded message length
 	syscall
 	
 #write the content stored at the address in $a1.
 
 	li $v0, 15			# syscall for write to file
-	move $a0, $s7		# put file descriptor into $a0
-	move $a1, $s0		# address of buffer with message
-	li $a2, 2048		# hardcoded message length
+	move $a0, $s7			# put file descriptor into $a0
+	move $a1, $s0			# address of buffer with message
+	li $a2, 2048			# hardcoded message length
 	syscall	
 
 #close the file 
 
-	li $v0, 16		        	# syscall for close a file
+	li $v0, 16		        # syscall for close a file
 	move $a0, $s6		        # put file descriptor into $a0 to close
 	syscall
 	bltz $a0, closeerror		# if error in closing file, print error mesage and exit
@@ -140,7 +136,7 @@ writeerror:
 	j end
 
 closeerror:
-	la $a0, closeErrMsg		  # print error message for error in closing file
+	la $a0, closeErrMsg		# print error message for error in closing file
 	li $v0, 4
 	syscall
 	j end
