@@ -1,0 +1,304 @@
+import java.lang.Math.*;
+
+class ExpressionTree {
+    private String value;
+    private ExpressionTree leftChild, rightChild, parent;
+    
+    ExpressionTree() {
+        value = null; 
+        leftChild = rightChild = parent = null;
+    }
+    
+    // Constructor
+    /* Arguments: String s: Value to be stored in the node
+                  ExpressionTree l, r, p: the left child, right child, and parent of the node to created      
+       Returns: the newly created ExpressionTree               
+    */
+    ExpressionTree(String s, ExpressionTree l, ExpressionTree r, ExpressionTree p) {
+        value = s; 
+        leftChild = l; 
+        rightChild = r;
+        parent = p;
+    }
+    
+    /* Basic access methods */
+    String getValue() { return value; }
+
+    ExpressionTree getLeftChild() { return leftChild; }
+
+    ExpressionTree getRightChild() { return rightChild; }
+
+    ExpressionTree getParent() { return parent; }
+
+
+    /* Basic setting methods */ 
+    void setValue(String o) { value = o; }
+    
+    // sets the left child of this node to n
+    void setLeftChild(ExpressionTree n) { 
+        leftChild = n; 
+        n.parent = this; 
+    }
+    
+    // sets the right child of this node to n
+    void setRightChild(ExpressionTree n) { 
+        rightChild = n; 
+        n.parent=this; 
+    }
+    
+
+    // Returns the root of the tree describing the expression s
+    // Watch out: it makes no validity checks whatsoever!
+    ExpressionTree(String s) {
+        // check if s contains parentheses. If it doesn't, then it's a leaf
+        if (s.indexOf("(")==-1) setValue(s);
+        else {  // it's not a leaf
+
+            /* break the string into three parts: the operator, the left operand,
+               and the right operand. ***/
+            setValue( s.substring( 0 , s.indexOf( "(" ) ) );
+            // delimit the left operand 2008
+            int left = s.indexOf("(")+1;
+            int i = left;
+            int parCount = 0;
+            // find the comma separating the two operands
+            while (parCount>=0 && !(s.charAt(i)==',' && parCount==0)) {
+                if ( s.charAt(i) == '(' ) parCount++;
+                if ( s.charAt(i) == ')' ) parCount--;
+                i++;
+            }
+            int mid=i;
+            if (parCount<0) mid--;
+
+        // recursively build the left subtree
+            setLeftChild(new ExpressionTree(s.substring(left,mid)));
+    
+            if (parCount==0) {
+                // it is a binary operator
+                // find the end of the second operand.F13
+                while ( ! (s.charAt(i) == ')' && parCount == 0 ) )  {
+                    if ( s.charAt(i) == '(' ) parCount++;
+                    if ( s.charAt(i) == ')' ) parCount--;
+                    i++;
+                }
+                int right=i;
+                setRightChild( new ExpressionTree( s.substring( mid + 1, right)));
+        }
+    }
+    }
+
+
+    // Returns a copy of the subtree rooted at this node... 2014
+    ExpressionTree deepCopy() {
+        ExpressionTree n = new ExpressionTree();
+        n.setValue( getValue() );
+        if ( getLeftChild()!=null ) n.setLeftChild( getLeftChild().deepCopy() );
+        if ( getRightChild()!=null ) n.setRightChild( getRightChild().deepCopy() );
+        return n;
+    }
+    
+    // Returns a String describing the subtree rooted at a certain node.
+    public String toString() {
+        String ret = value;
+        if ( getLeftChild() == null ) return ret;
+        else ret = ret + "(" + getLeftChild().toString();
+        if ( getRightChild() == null ) return ret + ")";
+        else ret = ret + "," + getRightChild().toString();
+        ret = ret + ")";
+        return ret;
+    } 
+
+
+    // Returns the value of the expression rooted at a given node
+    // when x has a certain value
+    double evaluate(double x) {
+ // Recursion base case: if no child nodes, then current node is a leaf (a value, not operand)
+ // Returns the value of x given as input (if x) or the number.
+      if((this.getRightChild()==null)&&(this.getLeftChild()==null)){
+        if(this.value.equals("x")){
+          return x;
+        }
+        return Double.parseDouble(this.value);
+      }
+      
+    //Recursive step: if has a child node, then must be operand. Solve the operation.
+      else{
+        double a;
+        double b;
+      //If only has one child node, then must be cos, exponent, or sin.
+        if(this.getRightChild()==null||this.getLeftChild()==null){
+        //If the child node is on the left, make an ExpressionTree tempLeft whose root is the LeftChild
+        //Solve for the value that would be stored in tempLeft root after calling the method evaluate on it and store
+        // in double b.
+          if(this.getLeftChild()!=null){
+            ExpressionTree tempLeft = this.getLeftChild().deepCopy();
+            b = tempLeft.evaluate(x);
+            //If the value of tempLeft root ends up being x, store the input value for x in double b.
+            if(this.getLeftChild().value.equals("x")){
+              b = x;
+            }
+    
+            //Perform cos, exp, or sin on double b as instructed by value.
+            if(this.value.equals("cos")){
+              return Math.cos(b);
+            }
+            if(this.value.equals("exp")){
+              return Math.exp(b);
+            }
+            else{
+              return Math.sin(b);
+            }
+          }
+          //Same as algorithm for the left child node, occurs if the child node is on the right (left child is null).
+          //Storage of numerical value into double a for further clarity.
+          else{
+            ExpressionTree tempRight = this.getRightChild().deepCopy();
+            a = tempRight.evaluate(x);
+            if(this.getRightChild().value.equals("x")){
+               a = x;
+            }            
+            if(this.value.equals("cos")){
+              return Math.cos(a);
+            }
+            if(this.value.equals("exp")){
+              return Math.exp(a);
+            }
+            else{
+              return Math.sin(a);
+            }
+          }
+        }
+      //If has 2 child nodes, then must be add, minus, or mult.
+        else{
+          //Creates subtrees of child nodes and calls the method evaluate on them.
+          //Stores the numerical value of the right child node in double a and the value of the left child node in double b.
+          ExpressionTree tempRight = this.getRightChild().deepCopy();
+          a = tempRight.evaluate(x);
+  
+          ExpressionTree tempLeft = this.getLeftChild().deepCopy();
+          b = tempLeft.evaluate(x);
+           
+          //If either of the subtrees roots is x, store the input value into the double respectively.
+          if(this.getRightChild().value.equals("x")){
+            a = x;
+          }
+          if(this.getLeftChild().value.equals("x")){
+            b = x;
+          }
+          
+          //Perform either add, minus, or mult on double b and a depending on value.
+          if(this.value.equals("add")){
+            return (b + a);
+          }
+          if(this.value.equals("minus")){
+            return (b-a);
+          }
+          else{
+            return (b*a);
+          }          
+        }
+      }
+    }
+                                                 
+
+    /* returns the root of a new expression tree representing the derivative of the
+       original expression */
+    ExpressionTree differentiate() {
+   //Copy the tree into new ExpressionTree differential.
+     ExpressionTree differential = this.deepCopy();
+     
+   //Recursive base step: if the value is x, change the value to 1 since the derivative of x is 1.
+   //                     if the value is a constant, change the value to 0 the derivative of a constant is 0.
+     if((this.getRightChild()==null&&this.getLeftChild()==null)){
+       if(this.value.equals("x")){
+         differential.setValue("1");
+         return differential;
+       }
+       else{
+         differential.setValue("0");
+         return differential;
+       }
+     }
+   
+   //Recursive step:
+     else{
+     /*If the operand is addition or subtraction where [d/dx of f(x)+g(x) = d/dx f(x) + d/dx g(x)]:
+      * Create new ExpressionTree differentialLeft and differentialRight representing the differential of each child node
+      * by recursively calling the differentiate method
+      * Update the left and right child nodes of ExpressionTree differential with its derivative. */
+       if(this.value.equals("add")||this.value.equals("minus")){    
+         ExpressionTree differentialLeft = this.getLeftChild().deepCopy().differentiate();       
+         ExpressionTree differentialRight = this.getRightChild().deepCopy().differentiate();
+         differential.setLeftChild(differentialLeft);
+         differential.setRightChild(differentialRight);
+         return differential;
+       }
+     /*If the operand is multiplication where [d/dx of f(x)*g(x) = (d/dx f(x))*g(x) + (d/dx g(x))*f(x)]:
+      * Again, create new ExpressionTree differentialLeft and differentialRight (calling differentiate method on each child node).
+      * Make the left child have children of d/dx f(x) and g(x) and change value to mult so it becomes mult(d/dx f(x), g(x))
+      * Make the right child have children of d/dx g(x) and f(x) and change value to mult so it becomes mult(d/dx g(x), f(x))
+      * Change the value of original node to be addition so it becomes add(mult(d/dx f(x), g(x)), mult(d/dx g(x), f(x))) */
+       if(this.value.equals("mult")){
+         ExpressionTree differentialLeft = this.getLeftChild().deepCopy().differentiate();       
+         ExpressionTree differentialRight = this.getRightChild().deepCopy().differentiate();
+         differential.getLeftChild().setLeftChild(differentialLeft);
+         differential.getLeftChild().setRightChild(this.getRightChild());
+         differential.getRightChild().setLeftChild(differentialRight);
+         differential.getRightChild().setRightChild(this.getLeftChild());
+         differential.getLeftChild().setValue("mult");
+         differential.getRightChild().setValue("mult");
+         differential.setValue("add");
+         return differential;
+       }
+     //If the operand is cos, sin, or exp:
+       else{
+       //Create ExpressionTree parent that has value of mult and with one child as the ExpressionTree differential.
+         ExpressionTree parent = new ExpressionTree("mult", differential, null, null);         
+       //Make the other child of ExpressionTree parent either the differential of the left or right child node of the ExpressionTree differential
+       //depending on which node is not null (sin, cos, and exp only have one non-null child node).
+         if(this.getLeftChild().equals("null")){
+           ExpressionTree differentialRight = this.getRightChild().deepCopy().differentiate();
+           parent.setRightChild(differentialRight);
+         }
+         else{
+           ExpressionTree differentialLeft = this.getLeftChild().deepCopy().differentiate();
+           parent.setRightChild(differentialLeft);
+         }
+       
+       //Update the value of the differentials.
+        //If exp, don't need to change anything.
+        
+        //If sin, change to cos: d/dx sin(x) = cos(x)
+         if(this.value.equals("sin")){
+           differential.setValue("cos");
+         }
+         
+        /*The derivative of cos is -sin: create 2 new ExpressionTrees
+         * ExpressionTree zero has value 0, and no children or parent nodes
+         * ExpressionTree makeNegative has negative as the left child node, ExpressionTree parent as the right child node,
+         * and value "minus" to make ExpressionTree parent negative.
+         * Change the cos value to sin, and return ExpressionTree makeNegative */         
+         if(this.value.equals("cos")){
+           differential.setValue("sin");
+           ExpressionTree zero = new ExpressionTree("0", null, null, null);
+           ExpressionTree makeNegative = new ExpressionTree("minus", zero, parent, null);
+           return makeNegative;
+         }
+         
+       //Return ExpressionTree parent - if original was either exp or sin.
+         return parent;
+       }
+     }
+    }
+    
+    public static void main(String args[]) {
+        ExpressionTree e = new ExpressionTree("mult(add(2,x),cos(x))");
+        ExpressionTree a = new ExpressionTree("mult(cos(mult(2,x)),add(mult(0,x),mult(1,2)))");
+        ExpressionTree f = new ExpressionTree("sin(mult(2,x))");
+        ExpressionTree g = new ExpressionTree("exp(minus(5,x))");
+        System.out.println(g);
+        System.out.println(g.evaluate(1));
+        System.out.println(g.differentiate());
+   
+ }
+}
