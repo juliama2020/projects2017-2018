@@ -1,0 +1,96 @@
+//************************************************** makefile ********************************************************
+makeList: main.o list.o
+	gcc -o makeList main.o list.o
+main.o: main.c
+	gcc -c main.c
+list.o: list.c
+	gcc -c list.c
+
+
+//*************************************************** list.h **********************************************************
+#include <stdlib.h>
+#include <stdio.h>
+
+//If NODE isn't defined, define it: int data, NODE pointer. 
+#ifndef NODE
+struct NODE{
+	int data;
+	struct NODE *next;
+};
+#endif
+
+//Declares functions programmed in list.c and used in main.c.
+void newList();
+int addNode(int);
+void prettyPrint();
+
+//*************************************************** list.c ***********************************************************
+#include "list.h"
+
+static struct NODE *head;
+
+//Initializes a new list - sets the head pointer to null.
+void newList(){
+	head = NULL;
+}
+
+//Adds a node to the linked list.
+int addNode(int value){
+	//Mallocs a new node.
+	struct NODE *newNode;
+	newNode = (struct NODE *)malloc(sizeof(struct NODE));
+	//Return 0 (false) if malloc fails - no memory to malloc.
+	if(newNode==NULL) return 0;
+	//Add value and pointer to node, change what node head points to.
+	newNode->data = value;
+	newNode->next = head;
+	head = newNode;
+	//Return 1 (true) if node successfully added.
+	return 1;
+}
+
+//Prints the linked list.
+void prettyPrint(){
+	//Makes copy of head pointer.
+	struct NODE *temp = head;
+	//While doesn't point to null (not last element of the list),
+	//print element and move pointer to next element.
+	while(temp!=NULL){
+		printf("%d ", temp->data);
+		temp = temp->next;
+	}
+}
+
+
+//*************************************************** main.c **********************************************************
+#include "list.h"
+
+int main(){
+	//Creates a new linked list.
+	newList();
+	//Initializes integers used in adding nodes.
+	int added = 0;
+	int value = -1;
+	//Asks for user integer input and puts value into int value. 
+	printf("Enter an integer: ");
+	scanf("%d", &value);
+	//While user input is a non-negative integer
+	//add new node with user input value and ask for further input.
+	while(value>0){
+		added = addNode(value);
+	//If unsuccessfully added, print error message and exit program.
+		if(added==0){
+			printf("Input was unsuccessfully added.");
+			exit(1);
+		}
+		printf("Enter an integer: ");
+		scanf("%d", &value);
+	}
+	//Tell user non-positive integer input ends linked list.
+	printf("You have entered a non-positive integer, ending the linked list.\n");
+	//Prints the linked list.
+	printf("Linked List: ");
+	prettyPrint();
+	printf("\n");
+	exit(0);
+}	
