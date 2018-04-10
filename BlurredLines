@@ -1,0 +1,303 @@
+.data
+
+#Must use accurate file path.
+#These file paths are EXAMPLES, 
+#should not work for you
+str1:	.asciiz "C:\\Users\\gailgao\\Documents\\McGill-HW\\COMP-273\\Assignment4Revised\\test1.txt"
+str3:	.asciiz "C:\\Users\\gailgao\\Documents\\McGill-HW\\COMP-273\\Assignment4Revised\\test-blur.pgm"	#used as output
+
+buffer:  .space 2048		# buffer for upto 2048 bytes
+newbuff: .space 2048		# buffer storing the blurred version
+tempbuff: .space 2048		# buffer storing just integers
+writemessage: "P2\n24 7\n15\n"	# what to write into test.pgm
+
+sace:	.asciiz " "
+openErrMsg: .asciiz "Error in opening file.\n"
+readErrMsg: .asciiz "Error in reading from file.\n"
+writeErrMsg: .asciiz "Error in writing to file.\n"
+closeErrMsg: .asciiz "Error in closing file.\n"
+
+	.text
+	.globl main
+
+main:	la $a0, str1			#readfile takes $a0 as input
+	jal readfile
+	
+	la $a1,buffer		#$a1 will specify the "2D array" we will be averaging
+	la $a2,newbuff		#$a2 will specify the blurred 2D array.
+	jal blur
+	
+	
+	
+	
+
+	la $a0, str3		#writefile will take $a0 as file location
+	move $a1, $v1			#$a1 takes location of what we wish to write.
+	jal writefile
+
+	li $v0,10		# exit
+	syscall
+
+readfile:
+#done in Q1
+
+#Open the file to be read,using $a0
+#Conduct error check, to see if file exists
+	
+	li $v0, 13			# syscall for open a file
+	li $a1, 0			# open for reading
+	li $a2, 0			# file mode ignored
+	syscall
+	bltz $v0, openerror		# if no file, then print error message and exit 
+	
+# You will want to keep track of the file descriptor*
+
+	move $s6, $v0		# else, save file descriptor
+
+# read from file
+# use correct file descriptor, and point to buffer
+# hardcode maximum number of chars to read
+# read from file
+
+	li $v0, 14			# syscall for read from file
+	move $a0, $s6		# put file descriptor into $a0 for reading
+	la $a1, buffer		# address of buffer to put read characters
+	li $a2, 2048		# hardcoded buffer length
+	syscall			# read from file
+	bltz $v0, readerror		# if error in reading, print error message and exit
+
+# address of the ascii string you just read is returned in $v1.
+# the text of the string is in buffer
+
+	la $v1, buffer
+	
+# close the file (make sure to check for errors)
+	
+	li $v0, 16			# syscall for close a file
+	move $a0, $s6		# put file descriptor into $a0 to close
+	syscall
+	bltz $a0, closeerror		# if error in closing file, print error mesage and exit
+	
+	jr $ra
+
+
+
+
+blur:
+#use real values for averaging.
+#HINT set of 8 "edge" cases.
+#The rest of the averaged pixels will 
+#default to the 3x3 averaging method
+#we will return the address of our
+#blurred 2D array in #v1
+
+	move $t0, $a1		# put address of original 2D array into $t0
+	la $t1, tempbuff		# load address of temp array of ints into $t1
+	addi $t2, $zero, 1		# initialize $t2 as a counter
+		
+toInt:	
+	lbu $t4, ($t0) 		# get character
+	beq $t4, 32, skip		# if ASCII = 32, then it's a ' ' so do not load
+	beq $t4, 10, skip		# if ASCII = 10, then it's a newline so do not load
+	addi $t4, $t4, -48		# convert from ascii to digit
+	
+	lbu $t5, 1($t0)		# get character after previous digit
+	beq $t5, 32, oneDigit		# if ASCII = 32, then it's a ' ' so just a 1-digit number	
+	beq $t5, 10, oneDigit		# if ASCII = 10, then it's a newline so just a 1-digit number
+	addi $t5, $t5, -48		# convert from ascii to digit
+	
+	lbu $t6, 2($t0)		# get character 2 after previous digit
+	beq $t6, 32, twoDigit		# if ASCII = 32, then it's a ' ' so just a 2-digit number	
+	beq $t6, 10, twoDigit		# if ASCII = 10, then it's a newline so just a 2-digit number
+	addi $t6, $t6, -48		# convert from ascii to digit
+	
+	mul $t4, $t4, 100		# else it's a 3-digit number, so $t4 (first char) is in hundreds place
+	mul $t5, $t5, 10		# $t5 is in tens place
+	add $t7, $t4, $t5		# add hundreds and tens place
+	add $t7, $t7, $t6		# add ones place
+	addi $t0, $t0, 2		# increment pointer by 2
+	addi $t2, $t2, 2		# increment counter by 2
+	j intArray
+	
+twoDigit:	mul $t4, $t4, 10		# if two digit integer, $t4 is tens place, $t5 is one's place
+	add $t7, $t4, $t5
+	
+	addi $t0, $t0, 1		# increment pointer by 1
+	addi $t2, $t2, 1		# increment counter by 1
+	j intArray
+	
+oneDigit:	move $t7, $t4		# just put one digit into $t7 (int value)
+
+intArray:	sb $t7, ($t1)		# put digit into array	
+	addi $t0, $t0, 1		# increment pointer of buffer
+	addi $t1, $t1, 1		# increment pointer of buffer of ints
+	addi $t2, $t2, 1		# increment counter
+	blt $t2, 500, toInt		# loop through entire buffer space
+	bge $t2, 500, beginBlur	# then begin method to blur array
+	
+skip:	addi $t0, $t0, 1		# increment pointer of buffer
+	addi $t2, $t2, 1		# increment counter
+	bge $t2, 500, beginBlur		# if done looping through buffer space
+	j toInt
+
+
+beginBlur:	move $t2, $zero		# let $t2 = counter
+	addi $t1, $t1, -169		# let $t1 point to the beginning of the array of ints
+	move $t0, $a2		# let $t0 be the pointer to new blurred 2D array
+	move $v1, $t0		# save the new blurred array address in $v1 - to be returned
+	addi $t8, $zero, 1		# $t8 will eventually be newline counter
+	addi $s4, $zero, 24		# $s4 is 24 for division
+	addi $s5, $zero, 100		# $s5 is 100 for division
+	addi $s6, $zero, 32		# $s6 is ASCII value for ' '
+	addi $s7, $zero, 10		# $s7 is ASCII value for newline (and 10 for division)
+
+
+findValue:	
+	ble $t2, 23, edge		# if $t2<23, then top edge
+	bge $t2, 143, edge		# if $t2>143, then bottom edge
+	div $t2, $s4 
+	mfhi $t4 			# jth column
+	beq $t4, 23, edge		# if j = 23, then right edge
+	beq $t4, 0, edge		# if j = 0, then left edge
+	
+	move $t7, $zero		# set $t7 to zero - will be used to store sum of ints
+	move $t4, $zero		# set $t4 to zero - will be used to count rows
+	addi $t1, $t1, -25		# go to [i-1, j-1]
+
+row: 	move $t5, $zero		
+
+column:	lbu $t6, ($t1)		# get one of int for average
+	add $t7, $t7, $t6		# let $t7 store sum of all neighboring pixel integers
+	addi $t1, $t1, 1		# increment pointer by a column
+	addi $t5, $t5, 1		# increment column loop counter
+	ble $t5, 2, column		# do column loop 3x
+	
+	addi $t1, $t1, 21		# increment pointer down a row and left 2 spaces
+	addi $t4, $t4, 1		# increment row loop counter
+	ble $t4, 2, row		# do row loop 3x
+	
+	
+	div $t7, $t7, 9 		# let $t7 be the average of the 9 pixels
+	
+	addi $t1, $t1, -47		# return to [i,j]
+	
+	j blurBuff			# put value into blur array
+
+edge:	move $t7, $zero		# initialize $t7 to zero
+	lbu $t7, ($t1)		# get value at original array
+	
+blurBuff:	blt $t7, 10, ones		# go to ones if value is single digit
+	blt $t7, 100, tens		# go to tens if value is in tens	
+		
+	div  $t7, $s5		# divide by 100
+	mflo $t9			# get hundreds digit (quotient)
+	addi $t9, $t9, 48		# add 48 to get ASCII value
+	sb $t9, ($t0)		# store byte
+	mfhi $t7			# get other digits (remainder)
+	addi $t0, $t0, 1		# increment pointer to blurred array
+
+tens:	div $t7, $s7 		# divide by 10
+	mflo $t9			# get tens digit (quotient)	
+	addi $t9, $t9, 48		# add 48 to get ASCII value
+	sb $t9, ($t0)		# store byte	
+	mfhi $t7			# get ones digit (remainder)
+	addi $t0, $t0, 1		# increment pointer to blurred array
+		
+
+ones:	addi $t7, $t7, 48		# add 48 to change digit back into ascii
+	sb $t7, ($t0)		# store ascii into blurred array
+		
+	
+	addi $t0, $t0, 1		# increment pointer to blurred array
+	addi $t1, $t1, 1		# increment pointer to array of ints
+	addi $t2, $t2, 1		# increment counter
+
+	j spaces
+	
+spaces:	div $t8, $s4		# check if newline counter says there should be a newline
+	mfhi $t9			# put remainder into $t9
+	beqz $t9, newline		# if remainder = 0, then should have a new line
+	sb $s6, ($t0)		# store a ' ' 
+	sb $s6, 1($t0)		# store another ' '
+	addi $t0, $t0, 2		# increment pointer for blurred array
+	addi $t8, $t8, 1		# increment newline counter
+	j findValue
+
+newline:	sb $s7, ($t0)		# store a newline character
+	addi $t0, $t0, 1		# increment pointer for blurred array
+	addi $t8, $t8, 1		# increment newline counter
+	blt $t2, 168, findValue		# check if should end loop
+	jr $ra
+	
+
+writefile:
+#done in Q1
+	
+	move $s0, $a1		# save address of buffer in $s0
+	
+#open file to be written to, using $a0.
+	
+	li $v0, 13			# syscall for open file
+	li $a1, 9			# open for writing
+	li $a2, 0			# file mode ignored
+	syscall
+	bltz $v0, openerror		# error in opening file
+	
+	move $s7, $v0		# save file descriptor
+	
+#write the specified characters as seen on assignment PDF:
+#P2 
+#24 7
+#15
+	
+	li $v0, 15			# syscall for write to file
+	move $a0, $s7		# put file descriptor into $a0
+	la $a1, writemessage		# address of message from which to write
+	li $a2, 12			# hardcoded message length
+	syscall
+	
+#write the content stored at the address in $a1.
+
+	li $v0, 15			# syscall for write to file
+	move $a0, $s7		# put file descriptor into $a0
+	move $a1, $s0		# address of buffer with message
+	li $a2, 2048		# hardcoded message length
+	syscall	
+
+#close the file (make sure to check for errors)
+
+	li $v0, 16			# syscall for close a file
+	move $a0, $s6		# put file descriptor into $a0 to close
+	syscall
+	bltz $a0, closeerror		# if error in closing file, print error mesage and exit
+	
+	jr $ra
+
+openerror:
+	la $a0, openErrMsg		# print error message for error in opening file
+	li $v0, 4
+	syscall
+	j end
+	
+readerror:
+	la $a0, readErrMsg		# print error message for error in reading from file
+	li $v0, 4
+	syscall
+	j end
+
+writeerror:
+	la $a0, writeErrMsg		# print error message for error in writing to file
+	li $v0, 4
+	syscall
+	j end
+
+closeerror:
+	la $a0, closeErrMsg		# print error message for error in closing file
+	li $v0, 4
+	syscall
+	j end
+	
+
+end:
+	li $v0, 10
+	syscall
