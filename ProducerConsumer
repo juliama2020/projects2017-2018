@@ -1,0 +1,133 @@
+//************************************************* makefile **************************************************************
+a6: main.o producer.o consumer.o
+	gcc -o a6 main.o producer.o consumer.o
+main.o: main.c
+	gcc -c main.c
+producer.o: producer.c
+	gcc -c producer.c
+consumer.o: consumer.c
+	gcc -c consumer.c
+
+
+
+//************************************************** functions.h ***********************************************************
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+
+//Declares functions used in main.c
+void producer();
+void consumer();
+
+
+
+//************************************************* producer.c *************************************************************
+#include "functions.h"
+
+void producer(){
+	char c;		      	//char for storing the character given to consumer
+	char who;		      //char for who's turn it is 
+	FILE *data;		    //for mydata.txt, character being read
+	FILE *toConsumer;	//for DATA.txt, character being given to consumer
+	FILE *turn;		    //for TURN.txt, determines whose turn it is
+
+	data = fopen("mydata.txt", "r");	//open mydata.txt	
+	c=fgetc(data);				//get first character of mydata.txt
+
+	//loop through until end of mydata.txt file
+	while(1){
+	//open TURN.txt and store first character into who
+		while((turn=fopen("TURN.txt","r+"))==NULL);
+		rewind(turn);
+		who = fgetc(turn);
+		if(who=='0'){			      // if who==0, it's producer's turn
+	//open DATA.txt, print c as first character, and close file
+			while((toConsumer = fopen("DATA.txt", "r+"))==NULL);
+			rewind(toConsumer);
+			fprintf(toConsumer, "%c", c);
+			fclose(toConsumer);
+	//print 1 to TURN.txt - change to consumer's turn
+			rewind(turn);
+			fprintf(turn, "1");
+			fclose(turn);
+	//if c==EOF, have reached the end of mydata.txt, so close files and exit program
+			if(feof(data)){
+				fclose(data);
+				return;
+			}
+			c=fgetc(data);		    //else, get next character in mydata.txt
+		}
+		else{				            // if who!=0, it's consumer's turn, don't do anything
+			fclose(turn);
+		}
+	}
+} 	
+
+
+//********************************************* consumer.c **************************************************************
+#include "functions.h"
+
+void consumer(){
+	char c;			// char for storing character from producer
+	char who;		// char for determining whose turn it is
+	FILE *turn;		// for opening TURN.txt, check whether it's consumer's turn
+	FILE *data;		// for opening "DATA.txt", get data given by producer 
+	
+	while(1){
+	// open TURN.txt and store first character into who
+		while((turn=fopen("TURN.txt", "r+"))==NULL);
+		rewind(turn);
+		who = fgetc(turn);
+		if(who=='1'){				// if who==1, then it's consumer's turn
+		// open DATA.txt and store first character in c
+			while((data=fopen("DATA.txt", "r+"))==NULL);
+			rewind(data);
+			c = fgetc(data);
+			fclose(data);
+		// if c==EOF, then close files and end program
+			if(c==EOF){
+				fclose(turn);
+				return;
+			}
+		// else print c to screen, change character in TURN.txt to 0, and close files
+			rewind(turn);
+			fprintf(turn,"0");
+			fclose(turn);
+			printf("%c", c);
+			fflush(stdout);
+		}
+		else{				      	// if who!=1, then it's producers turn, don't do anything
+			fclose(turn);
+		}
+	}
+}
+
+
+//************************************************* main.c **********************************************************
+#include "functions.h"
+
+
+int main(){
+//Initialize TURN.txt to "0" - start with producer
+	FILE *initTurn = fopen("TURN.txt", "r+");
+	rewind(initTurn);
+	fprintf(initTurn, "0");
+	fclose(initTurn);
+ 
+//Fork into producer and consumer programs.
+	int pid = fork();
+	if(pid==-1){
+		exit(1);		//Error in forking.
+	}
+	if(pid==0){
+		producer();
+		wait(NULL);
+		return 0;
+	}
+	if(pid!=0){
+		consumer();
+		wait(NULL);
+		return 0;
+	}
+	return 0;
+}
