@@ -1,0 +1,103 @@
+// STUDENT_NAME: Julia Ma
+// STUDENT_ID: 260728257
+
+import java.util.*;
+import java.io.*;
+
+
+
+
+public class Scrabble{
+
+    static HashSet<String> myDictionary; // this is where the words of the dictionary are stored
+
+    // Reads dictionary from file
+    public static void readDictionaryFromFile(String fileName) throws Exception {
+        myDictionary=new HashSet<String>();
+
+        BufferedReader myFileReader = new BufferedReader(new FileReader(fileName) );
+
+        String word;
+        while ((word=myFileReader.readLine())!=null) myDictionary.add(word);
+
+        myFileReader.close();
+    }
+
+
+
+    /* Arguments: 
+        char availableLetters[] : array of characters containing the letters that remain available
+        String prefix : Word assembled to date
+        Returns: String corresponding to the longest English word starting with prefix, completed with zero or more letters from availableLetters. 
+          If no such word exists, it returns the String ""
+     */
+     public static String longestWord(char availableLetters[], String prefix) {
+       String longest = "";
+       String temp = prefix;
+       String tempLongest = "";
+       
+     //Base case for recursion: if there are no letters left to be used, check if the longest word is in dictionary (if so, set longest equal to it).
+       if(availableLetters.length==0){      
+         if(myDictionary.contains(temp)&&(temp.length()>longest.length())){
+           longest = temp;
+         }
+       }
+     //Recursive loop to find all permutations of available letters attached to given prefix.
+       else{
+         for(int i=0; i<availableLetters.length; i++){
+         //Add a letter to the prefix
+           temp = prefix + availableLetters[i];
+
+         //Create a new subarraiy (lettersLeft) containing all the availableLetters except the one just used.
+           char[] lettersLeft = new char[availableLetters.length-1];
+           for(int j=0; j<i; j++){
+             lettersLeft[j] = availableLetters[j];
+           }
+           for(int k=(i+1); k<availableLetters.length; k++){
+             lettersLeft[k-1] = availableLetters[k];
+           }
+           if(myDictionary.contains(temp)&&(temp.length() > longest.length())){
+             longest = temp;
+           }
+           
+         //Call longestWord recursively to check all combinations to find longest word.
+           tempLongest = longestWord(lettersLeft, temp);
+           if(myDictionary.contains(tempLongest)&&(tempLongest.length() > longest.length())){
+             longest = tempLongest;
+           }
+           
+         }
+       }
+         
+       return longest;
+    }
+
+    
+    
+    public static void main (String args[]) throws Exception {
+       
+ // First, read the dictionary
+       try {
+          readDictionaryFromFile("englishDictionary.txt");
+       }
+       catch(Exception e) {
+          System.out.println("Error reading the dictionary: "+e);
+       }
+        
+        
+        // Ask user to type in letters
+       BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in) );
+       char letters[]; 
+       do {
+          System.out.println("Enter your letters (no spaces or commas):");     
+          letters = keyboard.readLine().toCharArray();
+
+     // now, enumerate the words that can be formed
+          String longest = longestWord(letters, "");
+          System.out.println("The longest word is "+longest);
+        } while (letters.length!=0);
+
+        keyboard.close();
+        
+    }
+}
