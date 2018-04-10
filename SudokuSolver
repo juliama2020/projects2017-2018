@@ -13,11 +13,9 @@ class Sudoku
     int Grid[][];
 
 
-    /* The solve() method should remove all the unknown characters ('x') in the Grid
+    /* The solve() method removes all the unknown characters ('x') in the Grid
      * and replace them with the numbers from 1-9 that satisfy the Sudoku puzzle. */
-    public void solve()
-    {
-        /* INSERT YOUR CODE HERE */
+    public void solve(){
       ArrayList<ArrayList<int[]>> empty = emptySpaces();
       ArrayList<ArrayList<Integer>> available = availableSpaces();
       permute(empty, available);
@@ -175,16 +173,10 @@ class Sudoku
     } 
     
     
-
-    /*****************************************************************************/
-    /* NOTE: YOU SHOULD NOT HAVE TO MODIFY ANY OF THE FUNCTIONS BELOW THIS LINE. */
-    /*****************************************************************************/
- 
     /* Default constructor.  This will initialize all positions to the default 0
      * value.  Use the read() function to load the Sudoku puzzle from a file or
      * the standard input. */
-    public Sudoku( int size )
-    {
+    public Sudoku(int size) {
         SIZE = size;
         N = size*size;
 
@@ -198,8 +190,7 @@ class Sudoku
     /* readInteger is a helper function for the reading of the input file.  It reads
      * words until it finds one that represents an integer. For convenience, it will also
      * recognize the string "x" as equivalent to "0". */
-    static int readInteger( InputStream in ) throws Exception
-    {
+    static int readInteger( InputStream in ) throws Exception {
         int result = 0;
         boolean success = false;
 
@@ -224,11 +215,10 @@ class Sudoku
 
 
     /* readWord is a helper function that reads a word separated by white space. */
-    static String readWord( InputStream in ) throws Exception
-    {
+    static String readWord( InputStream in ) throws Exception {
         StringBuffer result = new StringBuffer();
         int currentChar = in.read();
- String whiteSpace = " \t\r\n";
+         String whiteSpace = " \t\r\n";
         // Ignore any leading white space
         while( whiteSpace.indexOf(currentChar) > -1 ) {
             currentChar = in.read();
@@ -247,8 +237,7 @@ class Sudoku
      * grid is filled in one row at at time, from left to right.  All non-valid
      * characters are ignored by this function and may be used in the Sudoku file
      * to increase its legibility. */
-    public void read( InputStream in ) throws Exception
-    {
+    public void read( InputStream in ) throws Exception {
         for( int i = 0; i < N; i++ ) {
             for( int j = 0; j < N; j++ ) {
                 Grid[i][j] = readInteger( in );
@@ -260,8 +249,7 @@ class Sudoku
     /* Helper function for the printing of Sudoku puzzle.  This function will print
      * out text, preceded by enough ' ' characters to make sure that the printint out
      * takes at least width characters.  */
-    void printFixedWidth( String text, int width )
-    {
+    void printFixedWidth( String text, int width ) {
         for( int i = 0; i < width - text.length(); i++ )
             System.out.print( " " );
         System.out.print( text );
@@ -270,8 +258,7 @@ class Sudoku
 
     /* The print() function outputs the Sudoku grid to the standard output, using
      * a bit of extra formatting to make the result clearly readable. */
-    public void print()
-    {
+    public void print(){
         // Compute the number of digits necessary to print out each number in the Sudoku puzzle
         int digits = (int) Math.floor(Math.log(N) / Math.log(10)) + 1;
 
@@ -303,16 +290,14 @@ class Sudoku
      * unless a file name is provided as a run-time argument, in which case the
      * Sudoku puzzle is loaded from that file.  It then solves the puzzle, and
      * outputs the completed puzzle to the standard output. */
-    public static void main( String args[] ) throws Exception
-    {
+    public static void main( String args[] ) throws Exception {
         InputStream in;
         if( args.length > 0 ) 
             in = new FileInputStream( args[0] );
         else
             in = System.in;
 
-        // The first number in all Sudoku files must represent the size of the puzzle.  See
-        // the example files for the file format.
+        // The first number in all Sudoku files must represent the size of the puzzle.
         int puzzleSize = readInteger( in );
         if( puzzleSize > 100 || puzzleSize < 1 ) {
             System.out.println("Error: The Sudoku puzzle size must be between 1 and 100.");
@@ -324,12 +309,10 @@ class Sudoku
         // read the rest of the Sudoku puzzle
         s.read( in );
 
-        // Solve the puzzle.  We don't currently check to verify that the puzzle can be
-        // successfully completed.  You may add that check if you want to, but it is not
-        // necessary.
+        // Solve the puzzle.
         s.solve();
 
-        // Print out the (hopefully completed!) puzzle
+        // Print out the (hopefully completed!) puzzle :)
         s.print();
     }
 }
